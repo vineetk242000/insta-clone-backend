@@ -7,6 +7,9 @@ const usersSchema = new mongoose.Schema({
       type: String,
       required:true
     },
+    avatar:{
+      type:String,
+    },
     email: {
       type: String,
       required:true
@@ -28,9 +31,6 @@ const usersSchema = new mongoose.Schema({
     gender:{
       type:String,
     },
-    contact:{
-      type:String,
-    },
     date: {
       type: Date,
       default: Date.now
@@ -40,7 +40,7 @@ const usersSchema = new mongoose.Schema({
         type:Number,
         default:0
     },
-    followers:[{ type: String, ref: "User" }],
+    followers:[{ type: mongoose.Schema.ObjectId, ref: "User" }],
     followersCount:{
         type:Number,
         default:0
@@ -53,7 +53,8 @@ const usersSchema = new mongoose.Schema({
     savedPostsCount:{
       type:Number,
       default:0,
-    }
+    },
+    likedPosts:[{type: mongoose.Schema.ObjectId,ref:"Posts"}]
   });
   
   const User = mongoose.model('User', usersSchema);

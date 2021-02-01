@@ -16,9 +16,19 @@ const postsSchema = new mongoose.Schema({
           default: Date.now
     },
     user: {
-        type: String,
+        type: mongoose.Schema.ObjectId,
         ref: 'User',
         required:true
+    },
+    likesCount: {
+        type:Number,
+        default:0
+
+    },
+    comments: [{ type: mongoose.Schema.ObjectId, ref: "Comment" }],
+    commentsCount: {
+        type: Number,
+        default: 0,
     },
 },{timestamps:true});
 
