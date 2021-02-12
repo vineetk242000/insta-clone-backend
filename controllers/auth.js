@@ -79,25 +79,35 @@ exports.login = async(req,res)=>{
             expiresIn: 31556926 // 1 year in seconds
           },
           (err, token) => {
-            Post.find({user:user.id},function(err,posts){
-            res.json({
-              success: true,
-              token: token,
-              userId:user._id,
-              userName:user.userName,
-              name:user.name,
-              bio:user.bio,
-              website:user.website,
-              gender:user.gender,
-              email:user.email,
-              avatar:user.avatar,
-              posts:posts,
-              followers:user.followers,
-              followersCount:user.followersCount,
-              following:user.following,
-              followingCount:user.followingCount,
-              postCount:user.postCount
-            });
+            Post.find({user:user.id}).populate({
+              path: "user",
+              select: "userName avatar",
+            }).populate({
+              path:"comments",
+              select:"text",
+              populate:{
+                path:"user",
+                select:"userName _id avatar"
+              },
+            }).then(posts=>{
+              res.json({
+                  success: true,
+                  token: token,
+                  userId:user._id,
+                  userName:user.userName,
+                  name:user.name,
+                  bio:user.bio,
+                  website:user.website,
+                  gender:user.gender,
+                  email:user.email,
+                  avatar:user.avatar,
+                  posts:posts,
+                  followers:user.followers,
+                  followersCount:user.followersCount,
+                  following:user.following,
+                  followingCount:user.followingCount,
+                  postCount:user.postCount
+                });
           })
           }
         );

@@ -54,7 +54,7 @@ app.post("/login",login);
 
 // Get dashboard of the user
 
-app.get("/getUser/:userId",getUser);
+app.get("/getUser/:userId/:reqUser",getUser);
 
 
 // Create a new Post. Pass UserId, caption,file as body parameters
@@ -63,7 +63,7 @@ app.post("/createPost",createPost);
 
 // Route to delete a post, pass the post id and userId as a parameter to perform the task.
 
-app.get("/delete/:postId/:userId",deletePost);
+app.get("/deletePost/:postId/:userId",deletePost);
 
 // Route for following User. Here currentUserId= Logged In UserId and userId = UserId of the account to follow
 

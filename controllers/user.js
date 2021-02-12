@@ -1,4 +1,5 @@
 const User = require("../models/user");
+const Post = require("../models/post")
 
 exports.followUser = async(req,res)=>{
     const currentUserId=req.params.currentUserId;
@@ -63,7 +64,6 @@ exports.unfollowUser = async(req,res)=>{
 exports.editUserProfile = async(req,res)=>{
     const{name,email,userName,website,bio,gender,userId}=req.body;
     const avatar=req.file.path;
-    console.log(avatar)
     User.findByIdAndUpdate(userId,{
       name,
       userName,
@@ -76,7 +76,7 @@ exports.editUserProfile = async(req,res)=>{
       if(err){
         res.json({success:false,statusCode:400,msg:err})
       }else{
-        res.json({success:true,statusCode:200,msg:"Successfully Updated"})
+        res.json({success:true,statusCode:200,msg:"Successfully Updated",avatar:avatar})
       }
     })
 };
@@ -92,18 +92,35 @@ exports.searchUser = async(req,res)=>{
 
 
 exports.getUser = async(req,res)=>{
-    User.findById(req.params.userId).then(userData=>{
+    await User.findById(req.params.userId).lean().then(async userData=>{
+      await User.findById(req.params.reqUser).then(user=>{
+        if(user.following.includes(userData._id)){
+          userData.isFollowed=true
+        }else{
+          userData.isFollowed=false
+        }
+      })
+      Post.find({user:userData._id}).populate({
+        path:"user",
+        select:"userName avatar _id"
+      }).populate({
+        path:"comments",
+        select:"text",
+        populate:{
+          path:"user",
+          select:"userName _id avatar"
+        },
+      }).then(posts=>{
+         userData.posts = posts;
         res.json({success:true,statusCode:200,userData:userData})
        }).catch(err=>{
            res.json({success:false,statusCode:500,err})
         })
+
+      });
    
 };   
 
-exports.getUserDetails = async (req,res)=>{
-  User.findById(req.params.userId).populate()
-  
-}
 
 exports.getSuggestions = async(req,res)=>{
     let userFollowing=[];
