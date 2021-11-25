@@ -1,192 +1,218 @@
 const User = require("../models/user");
-const Post = require("../models/post")
+const Post = require("../models/post");
 
-exports.followUser = async(req,res)=>{
-    const currentUserId=req.params.currentUserId;
-    const userId=req.params.userId;
-  
-    if(currentUserId==userId){
-      res.json({success:false,statusCode:401,msg:"You can not follow yourself"});
-    }else{
-        User.findByIdAndUpdate(userId,{
-          $push:{followers:currentUserId},
-          $inc:{followersCount:1}},function(err){
-            if(err){
-            res.json({success:false,statusCode:400,msg:err})
-            }else{
-              User.findByIdAndUpdate(currentUserId,{
-                $push:{following:userId},
-                $inc:{followingCount:1}},function(err) {
-                  if(err){
-                    res.json({success:false,statusCode:500,msg:err})
-                  }else{
-                    res.json({success:true,statusCode:200,msg:"successfully done"})
-                  }
-                  
-                }
-               )
+exports.followUser = async (req, res) => {
+  const userId = req.params.userId;
+  const user = req.user._id;
+
+  if (user === userId) {
+    res.status(400).json({
+      success: false,
+      statusCode: 401,
+      msg: "You can not follow yourself",
+    });
+  } else {
+    User.findByIdAndUpdate(
+      userId,
+      {
+        $push: { followers: user },
+        $inc: { followersCount: 1 },
+      },
+      function (err) {
+        if (err) {
+          res.json({ success: false, statusCode: 400, msg: err });
+        } else {
+          User.findByIdAndUpdate(
+            user,
+            {
+              $push: { following: userId },
+              $inc: { followingCount: 1 },
+            },
+            function (err) {
+              if (err) {
+                res.json({ success: false, statusCode: 500, msg: err });
+              } else {
+                res.json({
+                  success: true,
+                  statusCode: 200,
+                  msg: "successfully done",
+                });
+              }
             }
-       
-      })
-    }
+          );
+        }
+      }
+    );
+  }
 };
 
-exports.unfollowUser = async(req,res)=>{
-    const currentUserId=req.params.currentUserId;
-    const userId=req.params.userId;
-  
-    if(currentUserId==userId){
-      res.json({success:false,statusCode:401,msg:"You can not unfollow yourself"});
-    }else{
-        User.findByIdAndUpdate(userId,{
-          $pull:{followers:currentUserId},
-          $inc:{followersCount:-1}},function(err){
-            if(err){
-            res.json({success:false,statusCode:400,msg:err})
-            }else{
-              User.findByIdAndUpdate(currentUserId,{
-                $pull:{following:userId},
-                $inc:{followingCount:-1}},function(err) {
-                  if(err){
-                    res.json({success:false,statusCode:500,msg:err})
-                  }else{
-                    res.json({success:true,statusCode:200,msg:"successfully done"})
-                  }
-                  
-                }
-               )
+exports.unfollowUser = async (req, res) => {
+  const currentUserId = req.user._id;
+  const userId = req.params.userId;
+
+  if (currentUserId == userId) {
+    res.json({
+      success: false,
+      statusCode: 401,
+      msg: "You can not unfollow yourself",
+    });
+  } else {
+    User.findByIdAndUpdate(
+      userId,
+      {
+        $pull: { followers: currentUserId },
+        $inc: { followersCount: -1 },
+      },
+      function (err) {
+        if (err) {
+          res.json({ success: false, statusCode: 400, msg: err });
+        } else {
+          User.findByIdAndUpdate(
+            currentUserId,
+            {
+              $pull: { following: userId },
+              $inc: { followingCount: -1 },
+            },
+            function (err) {
+              if (err) {
+                res.json({ success: false, statusCode: 500, msg: err });
+              } else {
+                res.json({
+                  success: true,
+                  statusCode: 200,
+                  msg: "successfully done",
+                });
+              }
             }
-       
-      })
-    }
+          );
+        }
+      }
+    );
+  }
 };
 
-exports.editUserProfile = async(req,res)=>{
-    const{name,email,userName,website,bio,gender,userId}=req.body;
-    const avatar=req.file.path;
-    User.findByIdAndUpdate(userId,{
+exports.editUserProfile = async (req, res) => {
+  const { name, email, userName, website, bio, gender } = req.body;
+  const userId = req.user._id;
+  const avatar = req.file.path;
+  User.findByIdAndUpdate(
+    userId,
+    {
       name,
       userName,
       email,
       website,
       bio,
       gender,
-      avatar
-    },function(err){
-      if(err){
-        res.json({success:false,statusCode:400,msg:err})
-      }else{
-        res.json({success:true,statusCode:200,msg:"Successfully Updated",avatar:avatar})
+      avatar,
+    },
+    function (err) {
+      if (err) {
+        res.json({ success: false, statusCode: 400, msg: err });
+      } else {
+        res.json({
+          success: true,
+          statusCode: 200,
+          msg: "Successfully Updated",
+          avatar: avatar,
+        });
       }
-    })
+    }
+  );
 };
 
-
-exports.searchUser = async(req,res)=>{
-    User.findOne({userName:req.params.userName}).then(users=>{
-      res.json({success:true,statusCode:200,users:users})
-    }).catch(err=>{
-      res.json({success:false,statusCode:500,err})
+exports.searchUser = async (req, res) => {
+  User.findOne({ userName: req.params.userName })
+    .then((users) => {
+      res.json({ success: true, statusCode: 200, users: users });
     })
+    .catch((err) => {
+      res.json({ success: false, statusCode: 500, err });
+    });
 };
 
+exports.getUser = async (req, res) => {
+  User.findById(req.user._id)
+    .lean()
+    .select("-password")
+    .populate({
+      path: "posts",
+      select: "images caption date likes",
+    })
+    .then((userData) => {
+      res.status(200).json({ success: true, userData: userData });
+    })
+    .catch((err) => {
+      console.log(err);
+      res.status(500).json({ success: false, msg: "Try again Later" });
+    });
+};
 
-exports.getUser = async(req,res)=>{
-    await User.findById(req.params.userId).lean().then(async userData=>{
-      await User.findById(req.params.reqUser).then(user=>{
-        if(user.following.includes(userData._id)){
-          userData.isFollowed=true
-        }else{
-          userData.isFollowed=false
+exports.getSuggestions = async (req, res) => {
+  let userFollowing = [];
+  let suggestedUsers = [];
+
+  await User.findById(req.user._id).then((user) => {
+    user.following.map((following) => userFollowing.push(following));
+  });
+
+  await User.find()
+    .then(async (users) => {
+      await users.forEach(async (user) => {
+        if (
+          !userFollowing.toString().includes(user._id.toString()) &&
+          req.params.userId.toString() != user._id.toString()
+        ) {
+          suggestedUsers.push(user);
+        }
+      });
+      res.json({ success: true, statusCode: 200, users: suggestedUsers });
+    })
+    .catch((err) => {
+      res.json({ statusCode: 500, err });
+    });
+};
+
+exports.getFollowers = async (req, res) => {
+  let followers = [];
+  let users = [];
+  await User.findById(req.user._id).then((user) => {
+    user.followers.map((follower) => followers.push(follower));
+  });
+
+  await followers.forEach((followerId) => {
+    User.findById(followerId)
+      .then((user) => {
+        users.push(user);
+
+        if (followers.length === Object.keys(users).length) {
+          res.json({ success: true, statusCode: 200, users: users });
         }
       })
-      Post.find({user:userData._id}).populate({
-        path:"user",
-        select:"userName avatar _id"
-      }).populate({
-        path:"comments",
-        select:"text",
-        populate:{
-          path:"user",
-          select:"userName _id avatar"
-        },
-      }).then(posts=>{
-         userData.posts = posts;
-        res.json({success:true,statusCode:200,userData:userData})
-       }).catch(err=>{
-           res.json({success:false,statusCode:500,err})
-        })
-
+      .catch((err) => {
+        console.log(err);
       });
-   
-};   
-
-
-exports.getSuggestions = async(req,res)=>{
-    let userFollowing=[];
-    let suggestedUsers=[];
-  
-    await User.findById(req.params.userId).then(user=>{
-      user.following.map(following=>(userFollowing.push(following)
-      ));
-    }); 
-  
-    await User.find().then(async users=>{
-      await users.forEach(async user=>{
-       if(!(userFollowing.toString().includes(user._id.toString())) && req.params.userId.toString()!=user._id.toString()){
-         suggestedUsers.push(user);
-       }
-      })
-      res.json({success:true,statusCode:200,users:suggestedUsers});
-    }).catch(err=>{
-      res.json({statusCode:500,err})
-    })
+  });
 };
-  
 
-exports.getFollowers =async (req,res)=>{
-  let followers =[];
-  let users =[]
-  await User.findById(req.params.userId).then(user=>{
-    user.followers.map(follower=>followers.push(follower));
+exports.getFollowedUsers = async (req, res) => {
+  let followedUsers = [];
+  let users = [];
+  await User.findById(req.user._id).then((user) => {
+    user.following.map((userId) => followedUsers.push(userId));
   });
 
-  
+  await followedUsers.forEach((userId) => {
+    User.findById(userId)
+      .then((user) => {
+        users.push(user);
 
-  await followers.forEach(followerId=>{
-    User.findById(followerId).then(user=>{
-      users.push(user);
-
-      if(followers.length ===  Object.keys(users).length){
-        res.json({success:true,statusCode:200,users:users})
-      }
-
-    }).catch(err=>{
-      console.log(err);
-    })
-  })
-}
-  
-exports.getFollowedUsers =async (req,res)=>{
-  let followedUsers =[];
-  let users =[]
-  await User.findById(req.params.userId).then(user=>{
-    user.following.map(userId=>followedUsers.push(userId));
+        if (followedUsers.length === Object.keys(users).length) {
+          res.json({ success: true, statusCode: 200, users: users });
+        }
+      })
+      .catch((err) => {
+        console.log(err);
+      });
   });
-
-  
-
-  await followedUsers.forEach(userId=>{
-    User.findById(userId).then(user=>{
-      users.push(user);
-
-      if(followedUsers.length ===  Object.keys(users).length){
-        res.json({success:true,statusCode:200,users:users})
-      }
-      
-    }).catch(err=>{
-      console.log(err);
-    })
-  })
-}
-  
+};

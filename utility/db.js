@@ -4,7 +4,7 @@ const mongoose = require("mongoose");
 
 
 const connect = async function () {
-    const uri = "Your Mongodb Url"; // Will return DB URI 
+    const uri = process.env.MONGODB_URI; // Will return DB URI 
     console.log(`Connecting to DB - uri: ${uri}`);
     return mongoose.connect(uri, {useNewUrlParser: true,useFindAndModify:false});
   };
