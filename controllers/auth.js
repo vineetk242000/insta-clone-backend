@@ -12,7 +12,8 @@ exports.registerUser = async (req, res) => {
       msg: "One or more fields is missing",
     });
   } else {
-    User.findOne({ email: email }).then((user) => {
+    try {
+      const user = await User.findOne({ email: email });
       if (user) {
         res.json({
           success: false,
@@ -20,80 +21,65 @@ exports.registerUser = async (req, res) => {
           msg: "Email is already Registered",
         });
       } else {
-        User.findOne({ userName: userName }).then((user) => {
-          if (user) {
-            res.json({
-              success: false,
-              statusCode: 402,
-              msg: "User name already taken",
-            });
-          } else {
-            const newUser = new User({
-              name,
-              email,
-              password,
-              userName,
-            });
+        const newUser = new User({
+          name,
+          email,
+          password,
+          userName,
+        });
 
-            //password encryption
-            bcrypt.genSalt(10, function (err, salt) {
-              bcrypt.hash(newUser.password, salt, function (err, hash) {
-                if (err) throw err;
-                newUser.password = hash;
-                try {
-                  newUser.save().then((user) => {
-                    res
-                      .status(200)
-                      .json({ success: true, msg: "Account created" });
-                  });
-                } catch (err) {
-                  res
-                    .status(500)
-                    .json({ success: false, msg: "Try again later" });
-                }
-              });
-            });
-          }
+        //password encryption
+        bcrypt.genSalt(10, function (err, salt) {
+          bcrypt.hash(newUser.password, salt, async function (err, hash) {
+            if (err) throw err;
+            newUser.password = hash;
+            await newUser.save();
+            res.status(200).json({ success: true, msg: "Account Created" });
+          });
         });
       }
-    });
+    } catch (err) {
+      console.log(err);
+    }
   }
 };
 
 exports.login = async (req, res) => {
   const { userName, pass } = req.body;
-
-  User.findOne({ userName: userName }).then((user) => {
+  try {
+    const user = await User.findOne({ userName: userName });
     if (!user) {
       return res.status(401).json({
         success: false,
         msg: "User id does not exist",
       });
-    }
-
-    bcrypt.compare(pass, user.password, (err, isMatch) => {
-      if (err) throw err;
-      if (isMatch) {
-        const payload = {
-          id: user.id,
-        };
-        jwt.sign(
-          payload,
-          process.env.JWT_SECRET,
-          {
-            expiresIn: 31556926, // 1 year in seconds
-          },
-          (err, token) => {
-            if (!err) {
-              res.status(200).json({ success: true, token });
+    } else {
+      bcrypt.compare(pass, user.password, (err, isMatch) => {
+        if (err) throw err;
+        if (isMatch) {
+          const payload = {
+            id: user.id,
+          };
+          jwt.sign(
+            payload,
+            process.env.JWT_SECRET,
+            {
+              expiresIn: "7d", // 1 year in seconds
+            },
+            (err, token) => {
+              if (!err) {
+                res.status(200).json({ success: true, token });
+              }
             }
-          }
-        );
-      } else {
-        return res
-          .status(401)
-          .json({ success: false, msg: "Password Incorrect" });
-      }
-    });
-  });
+          );
+        } else {
+          return res
+            .status(401)
+            .json({ success: false, msg: "Password Incorrect" });
+        }
+      });
+    }
+  } catch (err) {
+    console.log(err);
+  }
 };
