@@ -22,6 +22,6 @@ app.get("/", (req, res) => {
 
 // Register new User
 
-app.listen(3001, () => {
+app.listen(8080, () => {
   console.log("Server is up");
 });

@@ -1,3 +1,4 @@
+const Post = require("../models/post");
 const User = require("../models/user");
 
 exports.followUser = async (req, res) => {
@@ -65,24 +66,43 @@ exports.unfollowUser = async (req, res) => {
 exports.editUserProfile = async (req, res) => {
   const { name, email, userName, website, bio, gender } = req.body;
   const userId = req.user._id;
-  const avatar = req.file.path;
 
-  try {
-    await User.findByIdAndUpdate(userId, {
-      name,
-      userName,
-      email,
-      website,
-      bio,
-      gender,
-      avatar,
-    });
-    res.status(200).json({
-      success: true,
-      avatar: avatar,
-    });
-  } catch (err) {
-    console.log(err);
+  if (req.files.avatar !== undefined) {
+    const avatar = req.files.avatar[0].location;
+    try {
+      const document = await User.findByIdAndUpdate(userId, {
+        name,
+        userName,
+        email,
+        website,
+        bio,
+        gender,
+        avatar,
+      });
+      res.status(200).json({
+        success: true,
+        userData: document,
+      });
+    } catch (err) {
+      console.log(err);
+    }
+  } else {
+    try {
+      const document = await User.findByIdAndUpdate(userId, {
+        name,
+        userName,
+        email,
+        website,
+        bio,
+        gender,
+      });
+      res.status(200).json({
+        success: true,
+        userData: document,
+      });
+    } catch (err) {
+      console.log(err);
+    }
   }
 };
 
@@ -123,14 +143,14 @@ exports.getSuggestions = async (req, res) => {
     users.forEach(async (user) => {
       if (
         !userFollowing.toString().includes(user._id.toString()) &&
-        req.params.userId.toString() != user._id.toString()
+        req.user._id.toString() != user._id.toString()
       ) {
         suggestedUsers.push(user);
       }
     });
-    res.json({ success: true, statusCode: 200, users: suggestedUsers });
+    res.status(200).json({ success: true, users: suggestedUsers });
   } catch (err) {
-    console.log(err);
+    res.status(500).json({ success: false, msg: "Something went wrong" });
   }
 };
 
@@ -173,6 +193,31 @@ exports.getFollowedUsers = async (req, res) => {
         }
       });
     });
+  } catch (err) {
+    console.log(err);
+  }
+};
+
+exports.getUserByUserName = async (req, res) => {
+  const { userName } = req.params;
+  try {
+    const userData = await User.findOne({ userName: userName })
+      .populate({ path: "posts", select: "images _id" })
+      .select("-password");
+    res.status(200).json({ success: true, userData });
+  } catch (err) {
+    console.log(err);
+  }
+};
+
+exports.getPost = async (req, res) => {
+  const { id } = req.params;
+  try {
+    const post = await Post.findById(id).populate({
+      path: "user",
+      select: "avatar _id userName",
+    });
+    res.status(200).json({ success: true, post });
   } catch (err) {
     console.log(err);
   }

@@ -138,13 +138,13 @@ exports.getPosts = async (req, res) => {
 
 exports.getSavedPosts = async (req, res, next) => {
   try {
-    const savedPosts = await User.findById(req.user._id)
-      .select("savedPosts")
+    const document = await User.findById(req.user._id)
+      .select("savedPosts -_id")
       .populate({
         path: "savedPosts",
         select: "images _id",
       });
-    res.status(200).json({ success: true, posts: savedPosts });
+    res.status(200).json({ success: true, savedPosts: document.savedPosts });
   } catch (err) {
     console.log(err);
   }

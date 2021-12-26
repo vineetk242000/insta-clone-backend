@@ -22,6 +22,8 @@ const {
   getSuggestions,
   searchUser,
   getUser,
+  getUserByUserName,
+  getPost,
 } = require("../controllers/user");
 const { protect } = require("../middlewares/auth");
 const router = express.Router();
@@ -29,7 +31,8 @@ const router = express.Router();
 router.route("/register").post(registerUser);
 router.route("/login").post(login);
 router.route("/me").get(protect, getUser);
-router.route("/user/edit").post(protect, editUserProfile);
+router.route("/edit").post(protect, editUserProfile);
+router.route("/search/:userName").get(protect, getUserByUserName);
 
 router
   .route("/follow/:userId")
@@ -37,10 +40,10 @@ router
   .delete(protect, unfollowUser);
 router.route("/followers").get(protect, getFollowers);
 router.route("/followings").get(protect, getFollowedUsers);
-router.route("/users").get(protect, getSuggestions);
-router.route("/feed").get(protect, getFeed);
+router.route("/accounts").get(protect, getSuggestions);
+router.route("/feed").get(protect, explore);
 router.route("/posts").get(protect, getPosts);
-router.route("/posts/saved").get(protect, getSavedPosts);
+router.route("/post/:id").get(protect, getPost);
 
 router.route("/search").post(protect, searchUser);
 

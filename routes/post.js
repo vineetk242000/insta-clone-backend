@@ -8,11 +8,13 @@ const {
   savePost,
   unsavePost,
   addComments,
+  getSavedPosts,
 } = require("../controllers/post");
 const { protect } = require("../middlewares/auth");
 const router = express.Router();
 
 router.route("/new").post(protect, createPost);
+router.route("/saved").get(protect, getSavedPosts);
 router.route("/:id").delete(protect, deletePost);
 router.route("/explore").get(protect, explore);
 router.post("/save/:id").put(protect, savePost).delete(protect, unsavePost);
