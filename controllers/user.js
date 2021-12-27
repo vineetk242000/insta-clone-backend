@@ -155,44 +155,28 @@ exports.getSuggestions = async (req, res) => {
 };
 
 exports.getFollowers = async (req, res) => {
-  let followers = [];
-  let users = [];
   try {
-    await User.findById(req.user._id).then((user) => {
-      user.followers.map((follower) => followers.push(follower));
-    });
-
-    await followers.forEach((followerId) => {
-      User.findById(followerId).then((user) => {
-        users.push(user);
-
-        if (followers.length === Object.keys(users).length) {
-          res.json({ success: true, statusCode: 200, users: users });
-        }
+    const users = await User.findById(req.user._id)
+      .select("followers -_id")
+      .populate({
+        path: "followers",
+        select: "avatar _id userName",
       });
-    });
+    res.status(200).json({ success: true, users: users.followers });
   } catch (err) {
     console.log(err);
   }
 };
 
 exports.getFollowedUsers = async (req, res) => {
-  let followedUsers = [];
-  let users = [];
   try {
-    await User.findById(req.user._id).then((user) => {
-      user.following.map((userId) => followedUsers.push(userId));
-    });
-
-    await followedUsers.forEach((userId) => {
-      User.findById(userId).then((user) => {
-        users.push(user);
-
-        if (followedUsers.length === Object.keys(users).length) {
-          res.json({ success: true, statusCode: 200, users: users });
-        }
+    const users = await User.findById(req.user._id)
+      .select("following -_id")
+      .populate({
+        path: "following",
+        select: "avatar _id userName",
       });
-    });
+    res.status(200).json({ success: true, users: users.following });
   } catch (err) {
     console.log(err);
   }
@@ -205,19 +189,6 @@ exports.getUserByUserName = async (req, res) => {
       .populate({ path: "posts", select: "images _id" })
       .select("-password");
     res.status(200).json({ success: true, userData });
-  } catch (err) {
-    console.log(err);
-  }
-};
-
-exports.getPost = async (req, res) => {
-  const { id } = req.params;
-  try {
-    const post = await Post.findById(id).populate({
-      path: "user",
-      select: "avatar _id userName",
-    });
-    res.status(200).json({ success: true, post });
   } catch (err) {
     console.log(err);
   }

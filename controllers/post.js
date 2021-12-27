@@ -65,9 +65,8 @@ exports.savePost = async (req, res) => {
   try {
     await User.findByIdAndUpdate(req.user._id, {
       $push: { savedPosts: req.params.postId },
-      $inc: { savedPostsCount: 1 },
     });
-    res.json({ success: true, statusCode: 200, msg: "Post saved!" });
+    res.status(200).json({ success: true, msg: "Post saved!" });
   } catch (err) {
     console.log(err);
   }
@@ -76,10 +75,9 @@ exports.savePost = async (req, res) => {
 exports.unsavePost = async (req, res) => {
   try {
     await User.findByIdAndUpdate(req.user._id, {
-      $push: { savedPosts: req.params.postId },
-      $inc: { savedPostsCount: -1 },
+      $pull: { savedPosts: req.params.postId },
     });
-    res.json({ success: true, statusCode: 200, msg: "Post saved!" });
+    res.status(200).json({ success: true, msg: "Post removed!" });
   } catch (err) {
     console.log(err);
   }
@@ -87,11 +85,8 @@ exports.unsavePost = async (req, res) => {
 
 exports.likePost = async (req, res) => {
   try {
-    await User.findByIdAndUpdate(req.user._id, {
-      $push: { likedPosts: req.params.postId },
-    });
     await Post.findByIdAndUpdate(req.params.postId, {
-      $inc: { likesCount: 1 },
+      $push: { likes: req.user._id },
     });
     res.json({ success: true, statusCode: 200, msg: "Post Liked!" });
   } catch (err) {
@@ -101,11 +96,8 @@ exports.likePost = async (req, res) => {
 
 exports.unLikePost = async (req, res) => {
   try {
-    await User.findByIdAndUpdate(req.user._id, {
-      $pull: { likedPosts: req.params.postId },
-    });
     await Post.findByIdAndUpdate(req.params.postId, {
-      $inc: { likesCount: -1 },
+      $pull: { likes: req.user._id },
     });
     res.json({ success: true, statusCode: 200, msg: "Post unLiked!" });
   } catch (err) {
@@ -169,6 +161,34 @@ exports.addComments = async (req, res) => {
       success: true,
       comment: savedComment,
     });
+  } catch (err) {
+    console.log(err);
+  }
+};
+
+exports.getPost = async (req, res) => {
+  const { id } = req.params;
+  try {
+    const post = await Post.findById(id)
+      .populate({
+        path: "user",
+        select: "avatar _id userName",
+      })
+      .populate({
+        path: "likes",
+        select: "userName",
+      })
+      .lean();
+    post.isSaved = false;
+    const document = await User.findById(req.user._id)
+      .select("savedPosts -_id")
+      .lean();
+    document.savedPosts.forEach((item) => {
+      if (item.toString() == post._id.toString()) {
+        post.isSaved = true;
+      }
+    });
+    res.status(200).json({ success: true, post });
   } catch (err) {
     console.log(err);
   }

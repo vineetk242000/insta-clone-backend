@@ -34,17 +34,13 @@ router.route("/me").get(protect, getUser);
 router.route("/edit").post(protect, editUserProfile);
 router.route("/search/:userName").get(protect, getUserByUserName);
 
-router
-  .route("/follow/:userId")
-  .put(protect, followUser)
-  .delete(protect, unfollowUser);
+router.route("/follow/:userId").get(protect, followUser);
+router.route("/unfollow/:userId").get(protect, unfollowUser);
 router.route("/followers").get(protect, getFollowers);
 router.route("/followings").get(protect, getFollowedUsers);
 router.route("/accounts").get(protect, getSuggestions);
 router.route("/feed").get(protect, explore);
 router.route("/posts").get(protect, getPosts);
-router.route("/post/:id").get(protect, getPost);
-
 router.route("/search").post(protect, searchUser);
 
 module.exports = router;
